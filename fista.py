@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as LA
 import pandas as pd
+from sklean.linear_model import  Lasso
 
 def soft_threshold(y, lam):
 	s = np.zeros_like(y)
@@ -10,13 +11,10 @@ def soft_threshold(y, lam):
 
 N = 100
 df = pd.read_csv('data.csv')
-df_x1 = pd.get_dummies(df['x1'], drop_first=True)
-df_x5 = pd.get_dummies(df['x5'], drop_first=True)
 y = np.array(df['y']).reshape(-1, 1)
-y = (y - y.mean()) / y.std()
-A = df[['x2', 'x3', 'x4']]
-A = (A - A.mean(axis=0)) / A.std(axis=0)
-A = np.hstack((A, df_x1, df_x5))
+y = (y - y.mean()) # / y.std()
+A = np.array(df[['x1', 'x2', 'x3', 'x4', 'x5']])
+A[:, 1:4] = (A[:, 1:4] - A[:, 1:4].mean(axis=0)) / A[:, 1:4].std(axis=0)
 
 # n_samples, n_features = 50, 200
 # A = np.random.randn(n_samples, n_features)
@@ -29,8 +27,8 @@ A = np.hstack((A, df_x1, df_x5))
 # # add noise
 # y += 0.01 * np.random.normal(size=n_samples)
 
-lam = 1e-10
-L = LA.eig(A.T@A)[0].max()
+lam = 200
+L = 2*LA.eig(A.T@A)[0].max() 
 
 eps = 1e-8
 
@@ -43,7 +41,7 @@ for i in range(3000):
 	if np.linalg.norm(res, 2) < eps:
 		break
 	v = wt + (A.T @ res) / L
-	new_xt = soft_threshold(v, 1/L)
+	new_xt = soft_threshold(v, lam/L)
 	new_beta = (1 + np.sqrt(1 + 4 * old_beta * old_beta)) / 2
 	wt = new_xt + (old_beta - 1) / new_beta * (new_xt - xt)
 	xt = new_xt

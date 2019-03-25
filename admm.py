@@ -8,15 +8,12 @@ def soft_threshold(y, lam):
 	s[y < -lam] = y[y < -lam] + lam
 	return s
 
-N = 100
+N = 1000
 df = pd.read_csv('data.csv')
-df_x1 = pd.get_dummies(df['x1'], drop_first=True)
-df_x5 = pd.get_dummies(df['x5'], drop_first=True)
 y = np.array(df['y']).reshape(-1, 1)
-y = (y - y.mean()) / y.std()
-A = df[['x2', 'x3', 'x4']]
-A = (A - A.mean(axis=0)) / A.std(axis=0)
-A = np.hstack((A, df_x1, df_x5))
+y = (y - y.mean()) # / y.std()
+A = np.array(df[['x1', 'x2', 'x3', 'x4', 'x5']])
+A[:, 1:4] = (A[:, 1:4] - A[:, 1:4].mean(axis=0)) / A[:, 1:4].std(axis=0)
 
 # n_samples, n_features = 50, 200
 # A = np.random.randn(n_samples, n_features)
@@ -32,17 +29,18 @@ A = np.hstack((A, df_x1, df_x5))
 #L=np.linalg.norm(A.T@A,ord="fro")/lam
 #L = np.max(np.sum(np.abs(A), axis=0))
 
-mu = 1
+lam = 0.2
+mu = 0.1
 
-x = A.T @ y
-z = x
+x = A.T @ y / N
+z = x.copy()
 h = np.zeros_like(x)
 N = A.shape[0]
 M = A.shape[1]
 
 for i in range(3000):
-	x = LA.inv(mu * np.identity(M) + A.T @ A ) @ (A.T @ y + mu * z - h)
-	z = soft_threshold(x + h / mu, 1 / mu)
+	x = LA.inv(mu * np.identity(M) + A.T @ A / N) @ (A.T @ y / N+ mu * z - h)
+	z = soft_threshold(x + h / mu, lam / mu)
 	h = h + mu * (x - z)
+print(z.reshape(len(z)))
 
-print(z)
