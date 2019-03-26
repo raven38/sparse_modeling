@@ -20,22 +20,29 @@ lam = 200
 L = LA.eig(A.T@A)[0].max() 
 
 eps = 1e-8
+num_iter = 5000
 
-xt = A.T @ y
+xt = A.T @ y / N
 old_beta = 0
 wt = xt
 
-for i in range(30000):
+losses = []
+pars = []
+
+for i in range(num_iter):
+	losses.append(np.sum((y - A @ xt)**2) / 1000)
+	pars.append(xt)
 	res = y - A @ wt
-	if np.linalg.norm(res, 2) < eps:
-		break
 	v = wt + (A.T @ res) / L
 	new_xt = soft_threshold(v, lam/L)
 	new_beta = (1 + np.sqrt(1 + 4 * old_beta * old_beta)) / 2
 	wt = new_xt + (old_beta - 1) / new_beta * (new_xt - xt)
 	xt = new_xt
 	old_beta = new_beta
-		
+
+np.savetxt("fista_loss.csv", np.array(losses), delimiter=',')
+np.savetxt("fista_parameter.csv", np.array(pars).reshape(num_iter, 5), delimiter=',')
+
 print("fista solution: ", xt.reshape(1, 5))
 print("fista's MSE: ", np.sum((y - A @ xt)**2) / 1000)
 
@@ -48,14 +55,21 @@ h = np.zeros_like(x)
 N = A.shape[0]
 M = A.shape[1]
 
-for i in range(3000):
+losses = []
+pars = []
+
+for i in range(num_iter):
+	losses.append(np.sum((y - A @ x)**2) / 1000)
+	pars.append(x)
 	x = LA.inv(mu * np.identity(M) + A.T @ A / N) @ (A.T @ y / N+ mu * z - h)
 	z = soft_threshold(x + h / mu, lam / mu)
 	h = h + mu * (x - z)
+	
+np.savetxt("admm_loss.csv", np.array(losses), delimiter=',')
+np.savetxt("admm_parameter.csv", np.array(pars).reshape(num_iter, 5), delimiter=',')
 
 print("ADMM solution: ", z.reshape(1, 5))
 print("ADMM's MSE: ", np.sum((y - A @ x)**2) / 1000)
-
 
 lasso = Lasso(alpha=0.2).fit(A, y)
 

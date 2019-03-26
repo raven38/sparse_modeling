@@ -36,7 +36,7 @@ xt = A.T @ y
 old_beta = 0
 wt = xt
 
-for i in range(3000):
+for i in range(100):
 	res = y - A @ wt
 	if np.linalg.norm(res, 2) < eps:
 		break
